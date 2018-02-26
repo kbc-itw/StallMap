@@ -1,9 +1,29 @@
 
+
+var map;
+var marker = [];
+var infoWindow = [];
+var markerData = [ // マーカーを立てる場所名・緯度・経度
+    {
+        name: 'MBC',
+        lat: 33.84056,
+        lng: 132.772447,
+        Decision:false
+    }, {
+        name: 'サンプル1',
+        lat: 33.840000,
+        lng: 132.672440,
+        Decision:false
+    }, {
+        name: 'サンプル',
+        lat: 33.333333,
+        lng: 132.5725000,
+        Decision:false
+    }
+];
+var mapLatLngs=[];
 function initMap() {
-    //markerサンプル（MBC）
-    var youLatLng = {lat :33.84056, lng: 132.772447};
-    console.log(youLatLng.lng);
-    var infoWindow;
+
     if (navigator.geolocation) {
         // 現在地を取得
         navigator.geolocation.getCurrentPosition(
@@ -11,8 +31,9 @@ function initMap() {
             function(position) {
                 // 緯度・経度を変数に格納
                 var mapLatLng = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+                mapLatLngs=new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
                 // マップ＆マップオブジェクト作成
-                var map = new google.maps.Map(document.getElementById('map'), {
+                map = new google.maps.Map(document.getElementById('map'), {
                     zoom : 15,          // 拡大倍率
                     center : mapLatLng,  // 緯度・経度
                     // マップのデザインを変更
@@ -88,47 +109,35 @@ function initMap() {
                     animation: google.maps.Animation.DROP,
                     icon: "my.png"
                 });
+
                 // サンプルマーカー
-                var youmymarker = new google.maps.Marker({
-                    map : map,             // 対象の地図オブジェクト
-                    position : youLatLng,   // 緯度・経度
-                    title: 'MBC',
-                    animation: google.maps.Animation.DROP,
-                    icon: "mbc.png"
-                    // my.png
-                });
+                // マーカー毎の処理
+                for (var i = 0; i < markerData.length; i++) {
+                    markerLatLng = new google.maps.LatLng({lat: markerData[i]['lat'], lng: markerData[i]['lng']}); // 緯度経度のデータ作成
+                    marker[i] = new google.maps.Marker({ // マーカーの追加
+                        position: markerLatLng, // マーカーを立てる位置を指定
+                        map: map, // マーカーを立てる地図を指定
+                        name:markerData[i].name,//マーカー名
+                        lat:markerData[i]['lat'],//マーカー位置の緯度
+                        lng:markerData[i]['lng'],//マーカー位置の経度
+                        icon: "mbc.png"
+                    });
+
+                    infoWindow[i] = new google.maps.InfoWindow({ // 吹き出しの追加
+                        content: '<div class="sample">' + markerData[i]['name'] + '</div>' // 吹き出しに表示する内容
+                    });
+
+                    markerEvent(i); // マーカーにクリックイベントを追加
+                }
+
                 //     クリックされた場合のイベント
-                infoWindow = new google.maps.InfoWindow({ // 吹き出しの追加
-                    content: '<div class="sample">MBC</div>' // 吹き出しに表示する内容
-                });
-                youmymarker.addListener('click', function() { // マーカーをクリックしたとき
-                    infoWindow.open(map, youmymarker); // 吹き出しの表示
-                });
-                youmymarker.addListener( "click", function ( ) {
-                    // 緯度・経度を変数に格
-                    var request = {
-                        origin: new google.maps.LatLng(position.coords.latitude, position.coords.longitude), // 出発地
-                        destination: new google.maps.LatLng(33.84056, 132.772447), // 目的地
-                        travelMode: google.maps.DirectionsTravelMode.WALKING, // 交通手段(歩行。DRIVINGの場合は車)
-                    };
-                    var d = new google.maps.DirectionsService(); // ルート検索オブジェクト
-                    var r = new google.maps.DirectionsRenderer({ // ルート描画オブジェクト
-                        map: map, // 描画先の地図
-                        preserveViewport: true, // 描画後に中心点をずらさない
-                    });
-                    // ルート検索
-                    d.route(request, function(result, status){
-                        // OKの場合ルート描画
-                        if (status == google.maps.DirectionsStatus.OK) {
-                            r.setDirections(result);
-                        }
-                    });
 
 
-                } ) ;
+
 
             },
-            // 取得失敗した場合
+
+        // 取得失敗した場合
             function(error) {
                 // エラーメッセージを表示
                 switch(error.code) {
@@ -151,4 +160,73 @@ function initMap() {
     } else {
         alert("この端末では位置情報が取得できません");
     }
+}
+function markerEvent(i) {//i番目のマーカーに対するイベント
+
+    marker[i].addListener('click', function() { // マーカーをクリックしたとき
+        console.log(marker[i].lat+"!"+marker[i].lng);
+        if (navigator.geolocation) {
+            // 現在地を取得
+            navigator.geolocation.getCurrentPosition(
+                // 取得成功した場合
+
+                function(position) {
+
+                    // 緯度・経度を変数に格納
+                    var request = {
+                        origin: new google.maps.LatLng(position.coords.latitude, position.coords.longitude), // 出発地
+                        destination: new google.maps.LatLng(marker[i].lat, marker[i].lng), // 目的地
+                        travelMode: google.maps.DirectionsTravelMode.WALKING, // 交通手段(歩行。DRIVINGの場合は車)
+                    };
+                    var d = new google.maps.DirectionsService(); // ルート検索オブジェクト
+                    var r = new google.maps.DirectionsRenderer({ // ルート描画オブジェクト
+                        map: map, // 描画先の地図
+                        preserveViewport: true, // 描画後に中心点をずらさない
+                    });
+
+                    d.route(request, function(result, status){
+                        // ルート検索
+                        if (status == google.maps.DirectionsStatus.OK&&markerData[i].Decision==false) {
+                            // OKの場合ルート描画
+                            r.setDirections(result);
+                            //markerData[i].Decision=true;
+                        }else{
+                            console.log("hahahahha");
+
+                        }
+
+
+                    });
+
+
+                    infoWindow[i].open(map, marker[i]) // 吹き出しの表示
+
+                },
+                // 取得失敗した場合
+                function(error) {
+                    // エラーメッセージを表示
+                    switch(error.code) {
+                        case 1: // PERMISSION_DENIED
+                            alert("位置情報の利用が許可されていません");
+                            break;
+                        case 2: // POSITION_UNAVAILABLE
+                            alert("現在位置が取得できませんでした");
+                            break;
+                        case 3: // TIMEOUT
+                            alert("タイムアウトになりました");
+                            break;
+                        default:
+                            alert("その他のエラー(エラーコード:"+error.code+")");
+                            break;
+                    }
+                }
+            );
+            // Geolocation APIに対応していない
+        } else {
+            alert("この端末では位置情報が取得できません");
+        }
+
+    });
+
+
 }
